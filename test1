@@ -1,20 +1,16 @@
-using System.Collections.Generic;
-using UnityEngine;
-
-public class TalentNode
+// Base Talent Class
+public abstract class Talent
 {
-    public string Name { get; private set; }
-    public string Description { get; private set; }
-    public int LevelRequirement { get; private set; }
-    public List<TalentNode> Prerequisites { get; private set; }
-    public bool IsActivated { get; private set; }
+    public string Name { get; protected set; }
+    public string Description { get; protected set; }
+    public int LevelRequirement { get; protected set; }
+    public bool IsActivated { get; protected set; }
 
-    public TalentNode(string name, string description, int levelRequirement, List<TalentNode> prerequisites = null)
+    public Talent(string name, string description, int levelRequirement)
     {
         Name = name;
         Description = description;
         LevelRequirement = levelRequirement;
-        Prerequisites = prerequisites ?? new List<TalentNode>();
         IsActivated = false;
     }
 
@@ -22,43 +18,60 @@ public class TalentNode
     {
         if (IsActivated) return false;
         if (playerLevel < LevelRequirement) return false;
-
-        foreach (var prerequisite in Prerequisites)
-        {
-            if (!prerequisite.IsActivated) return false;
-        }
-
         return true;
     }
 
     public void Activate()
     {
-        if (CanBeActivated(Player.Instance.Level)) // Assuming you have a Player class with a Level property
+        if (CanBeActivated(Player.Instance.Level))
         {
             IsActivated = true;
-            // Add code here to apply the effects of the talent.
+            ApplyEffect();
         }
+    }
+
+    protected abstract void ApplyEffect(); // Virtual method to be overridden
+}
+
+// Derived Talent Classes
+public class BasicAttackBoostTalent : Talent
+{
+    public BasicAttackBoostTalent() : base("Basic Attack Boost", "Boosts basic attack by 10%", 5) { }
+
+    protected override void ApplyEffect()
+    {
+        Player.Instance.IncreaseAttack(10);
     }
 }
 
-public class TalentTree : MonoBehaviour
+public class AdvancedAttackBoostTalent : Talent
 {
-    public List<TalentNode> Talents { get; private set; }
+    public AdvancedAttackBoostTalent() : base("Advanced Attack Boost", "Boosts all attacks by 5%", 10) { }
+
+    protected override void ApplyEffect()
+    {
+        Player.Instance.IncreaseAllAttacks(5);
+    }
+}
+
+// Talent Manager
+public class TalentManager : MonoBehaviour
+{
+    public List<Talent> Talents { get; private set; }
 
     private void Start()
     {
-        // Initialize your talents here. For example:
-        TalentNode basicAttackBoost = new TalentNode("Basic Attack Boost", "Boosts basic attack by 10%", 5);
-        TalentNode advancedAttackBoost = new TalentNode("Advanced Attack Boost", "Boosts all attacks by 5%", 10, new List<TalentNode> { basicAttackBoost });
-        Talents = new List<TalentNode> { basicAttackBoost, advancedAttackBoost };
+        Talents = new List<Talent>
+        {
+            new BasicAttackBoostTalent(),
+            new AdvancedAttackBoostTalent()
+            // Add other talents here
+        };
     }
 
     public void ActivateTalent(string talentName)
     {
-        TalentNode talent = Talents.Find(t => t.Name == talentName);
-        if (talent != null && talent.CanBeActivated(Player.Instance.Level))
-        {
-            talent.Activate();
-        }
+        Talent talent = Talents.Find(t => t.Name == talentName);
+        talent?.Activate();
     }
 }
