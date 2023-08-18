@@ -1,0 +1,64 @@
+using System.Collections.Generic;
+using UnityEngine;
+
+public class TalentNode
+{
+    public string Name { get; private set; }
+    public string Description { get; private set; }
+    public int LevelRequirement { get; private set; }
+    public List<TalentNode> Prerequisites { get; private set; }
+    public bool IsActivated { get; private set; }
+
+    public TalentNode(string name, string description, int levelRequirement, List<TalentNode> prerequisites = null)
+    {
+        Name = name;
+        Description = description;
+        LevelRequirement = levelRequirement;
+        Prerequisites = prerequisites ?? new List<TalentNode>();
+        IsActivated = false;
+    }
+
+    public bool CanBeActivated(int playerLevel)
+    {
+        if (IsActivated) return false;
+        if (playerLevel < LevelRequirement) return false;
+
+        foreach (var prerequisite in Prerequisites)
+        {
+            if (!prerequisite.IsActivated) return false;
+        }
+
+        return true;
+    }
+
+    public void Activate()
+    {
+        if (CanBeActivated(Player.Instance.Level)) // Assuming you have a Player class with a Level property
+        {
+            IsActivated = true;
+            // Add code here to apply the effects of the talent.
+        }
+    }
+}
+
+public class TalentTree : MonoBehaviour
+{
+    public List<TalentNode> Talents { get; private set; }
+
+    private void Start()
+    {
+        // Initialize your talents here. For example:
+        TalentNode basicAttackBoost = new TalentNode("Basic Attack Boost", "Boosts basic attack by 10%", 5);
+        TalentNode advancedAttackBoost = new TalentNode("Advanced Attack Boost", "Boosts all attacks by 5%", 10, new List<TalentNode> { basicAttackBoost });
+        Talents = new List<TalentNode> { basicAttackBoost, advancedAttackBoost };
+    }
+
+    public void ActivateTalent(string talentName)
+    {
+        TalentNode talent = Talents.Find(t => t.Name == talentName);
+        if (talent != null && talent.CanBeActivated(Player.Instance.Level))
+        {
+            talent.Activate();
+        }
+    }
+}
